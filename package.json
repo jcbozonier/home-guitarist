@@ -1,0 +1,7 @@
+{
+  "name": "songcraft-workshop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test", "dev": "python3 -m http.server 5173" }
+}
