@@ -2,6 +2,12 @@
 
 A small, offline-capable musical workshop. Record a single-note guitar riff, audition three supporting chord progressions, and keep recordings and observations in a sketchbook.
 
+Live app: https://jcbozonier.github.io/home-guitarist/
+
+## Verified in the first release
+
+Six automated tests cover guitar pitches with harmonics, silence, note/rest timing, melody parsing, harmonic alternatives, and changed endings. Browser checks cover demo and imported-audio analysis, accompaniment controls, notes and favorites, saved sketch reopening, complete JSON export/import, a 390px phone layout, and offline reload with the development server stopped. Physical iPhone/iPad/Android microphone and audio-output behavior remains to be tested.
+
 ## Run locally
 
 Serve this directory with `python3 -m http.server 5173` and open `http://localhost:5173`. No package installation or build is required. Microphone access needs HTTPS or localhost. On phones, use the HTTPS deployment rather than a LAN HTTP URL.

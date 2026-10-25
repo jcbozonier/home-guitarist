@@ -1,37 +1,232 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f2e9">
-  <meta name="description" content="A small workshop for big musical ideas. Capture a riff, explore its harmony, and make it your own.">
-  <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css"><title>Songcraft · Your musical workshop</title>
-</head>
-<body>
-<header class="topbar"><a class="brand" href="./" aria-label="Songcraft home"><span class="brand-icon">≋</span> songcraft<span class="brand-dot">.</span></a><span class="edition">THE MUSICAL WORKSHOP</span><span id="offline-status" class="connection">Preparing offline tools</span></header>
-<main>
-  <section class="intro"><div><p class="eyebrow">A LITTLE RIFF. A WORLD OF POSSIBILITIES.</p><h1>What will you make today?</h1><p class="lede">Play something. Follow your ear. Find where it wants to go.</p></div><div class="intro-mark" aria-hidden="true">♪<span>EVERY SONG STARTS SOMEWHERE</span></div></section>
-  <nav class="tabs" aria-label="Workspace"><button class="tab active" id="workbench-tab" aria-selected="true">01 <span>Workbench</span></button><button class="tab" id="library-tab" aria-selected="false">02 <span>My sketches</span><span id="sketch-count" class="badge">0</span></button><span class="tabs-note">Made for following a good idea.</span></nav>
-  <section id="workbench">
-    <div class="workspace-grid">
-      <section class="capture panel"><div class="section-label"><span><span class="step">01</span> THE STARTING POINT</span><span class="small-label">UP TO 30 SECONDS</span></div><h2>Give your idea a voice.</h2><p class="muted">A few notes are enough. Play a single-note riff, or bring in a recording.</p>
-        <div class="record-space"><canvas id="waveform" width="900" height="180" aria-label="Audio waveform"></canvas><div class="record-info"><span id="record-state">Your next song starts here</span><span id="duration">00:00</span></div></div>
-        <div class="capture-actions"><button id="record" class="button primary"><span class="record-dot"></span> Record a riff</button><label class="button secondary" for="audio-file">↥ Import audio</label><input id="audio-file" type="file" accept="audio/*" hidden><button id="play-riff" class="icon-button" aria-label="Play original riff" disabled>▶</button></div>
-        <div class="capture-bottom"><span>Just exploring?</span><button id="demo" class="text-button">Try a little demo riff ↗</button></div>
-        <p class="hint">Headphones help. A clean guitar sound and one note at a time work best.</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f2e9" />
+    <meta
+      name="description"
+      content="A small workshop for big musical ideas. Capture a riff, explore its harmony, and make it your own."
+    />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Songcraft · Your musical workshop</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Songcraft home"
+        ><span class="brand-icon">≋</span> songcraft<span class="brand-dot"
+          >.</span
+        ></a
+      ><span class="edition">THE MUSICAL WORKSHOP</span
+      ><span id="offline-status" class="connection"
+        >Preparing offline tools</span
+      >
+    </header>
+    <main>
+      <section class="intro">
+        <div>
+          <p class="eyebrow">A LITTLE RIFF. A WORLD OF POSSIBILITIES.</p>
+          <h1>What will you make today?</h1>
+          <p class="lede">
+            Play something. Follow your ear. Find where it wants to go.
+          </p>
+        </div>
+        <div class="intro-mark" aria-hidden="true">
+          ♪<span>EVERY SONG STARTS SOMEWHERE</span>
+        </div>
       </section>
-      <aside class="notebook panel"><div class="section-label"><span><span class="step">✎</span> FIELD NOTES</span><span class="small-label">YOURS TO KEEP</span></div><label class="sr-only" for="title">Sketch title</label><input id="title" class="title-input" placeholder="An idea without a name" maxlength="100"><label class="sr-only" for="notes">Musical notes</label><textarea id="notes" placeholder="What caught your ear? A feeling, a lyric, somewhere this could go…" maxlength="10000"></textarea><div class="notebook-footer"><span id="save-state">Saved on this device</span><button id="save" class="button dark">Save sketch ↗</button></div></aside>
-    </div>
-    <div id="notice" class="notice" role="status" aria-live="polite">Your audio stays on this device. No account, no uploads, just music.</div>
-    <section class="explore-section"><div class="section-heading"><div><p class="eyebrow">02 / FOLLOW THE HARMONY</p><h2>A few places to take it.</h2></div><span class="small-label">LISTEN FIRST. THEORY WHEN YOU WANT IT.</span></div>
-      <div id="analysis-summary" class="analysis-summary"><span class="tiny-star">✳</span><p>Capture a riff to discover chords that could sit underneath it.</p></div>
-      <div id="pitch-editor" class="pitch-editor" hidden><label for="melody">Detected melody <span class="muted">· edit notes if we misheard</span></label><div><input id="melody" aria-describedby="melody-help" placeholder="A3 C4 E4 G4"><button id="rethink" class="button secondary">Update harmony</button></div><small id="melody-help">Use note names with octaves, like A3 C4 E4. Editing preserves note timing when the note count stays the same.</small></div>
-      <div id="directions" class="directions"><article class="direction placeholder"><span class="card-number">A / THE FAMILIAR</span><h3>Find your footing.</h3><p>A grounded progression that gives your melody a home.</p><div class="ghost-chords"><i></i><i></i><i></i><i></i></div><span class="empty-caption">Waiting for your riff</span></article><article class="direction placeholder"><span class="card-number">B / A DIFFERENT LIGHT</span><h3>Change the scenery.</h3><p>The same notes can tell a different story over a new bass.</p><div class="ghost-chords"><i></i><i></i><i></i><i></i></div><span class="empty-caption">Waiting for your riff</span></article><article class="direction placeholder"><span class="card-number">C / A LITTLE TENSION</span><h3>Leave a door open.</h3><p>Find a little movement. Give the next phrase somewhere to go.</p><div class="ghost-chords"><i></i><i></i><i></i><i></i></div><span class="empty-caption">Waiting for your riff</span></article></div>
-    </section>
-    <section id="next-step" class="next-step" hidden><div><p class="eyebrow">03 / KEEP THE CONVERSATION GOING</p><h2>Let your riff answer itself.</h2><p id="development"></p></div><button id="variation" class="button secondary">♫ Hear an ending variation</button></section>
-  </section>
-  <section id="library" hidden><div class="section-heading"><div><p class="eyebrow">THE MATERIALS SHELF</p><h2>Good ideas, kept close.</h2></div><div class="library-actions"><label class="button secondary" for="project-file">Import sketch</label><input type="file" id="project-file" accept="application/json,.json" hidden><button class="button dark" id="new-sketch">＋ New sketch</button></div></div><p class="muted">Your recordings and notes live in this browser. Export the ones you want to keep backed up or move to another device.</p><div id="sketches" class="sketches"></div></section>
-  <footer><span>SONGCRAFT <span class="footer-slash">/</span> COLLECT. UNDERSTAND. MAKE.</span><span>A work in progress. Just like a good song.</span></footer>
-</main>
-<script type="module" src="./app.js"></script>
-</body></html>
+      <nav class="tabs" aria-label="Workspace">
+        <button class="tab active" id="workbench-tab" aria-selected="true">
+          01 <span>Workbench</span></button
+        ><button class="tab" id="library-tab" aria-selected="false">
+          02 <span>My sketches</span
+          ><span id="sketch-count" class="badge">0</span></button
+        ><span class="tabs-note">Made for following a good idea.</span>
+      </nav>
+      <section id="workbench">
+        <div class="workspace-grid">
+          <section class="capture panel">
+            <div class="section-label">
+              <span><span class="step">01</span> THE STARTING POINT</span
+              ><span class="small-label">UP TO 30 SECONDS</span>
+            </div>
+            <h2>Give your idea a voice.</h2>
+            <p class="muted">
+              A few notes are enough. Play a single-note riff, or bring in a
+              recording.
+            </p>
+            <div class="record-space">
+              <canvas
+                id="waveform"
+                width="900"
+                height="180"
+                aria-label="Audio waveform"
+              ></canvas>
+              <div class="record-info">
+                <span id="record-state">Your next song starts here</span
+                ><span id="duration">00:00</span>
+              </div>
+            </div>
+            <div class="capture-actions">
+              <button id="record" class="button primary">
+                <span class="record-dot"></span> Record a riff</button
+              ><label class="button secondary" for="audio-file"
+                >↥ Import audio</label
+              ><input
+                id="audio-file"
+                type="file"
+                accept="audio/*"
+                hidden
+              /><button
+                id="play-riff"
+                class="icon-button"
+                aria-label="Play original riff"
+                disabled
+              >
+                ▶
+              </button>
+            </div>
+            <div class="capture-bottom">
+              <span>Just exploring?</span
+              ><button id="demo" class="text-button">
+                Try a little demo riff ↗
+              </button>
+            </div>
+            <p class="hint">
+              Headphones help. A clean guitar sound and one note at a time work
+              best.
+            </p>
+          </section>
+          <aside class="notebook panel">
+            <div class="section-label">
+              <span><span class="step">✎</span> FIELD NOTES</span
+              ><span class="small-label">YOURS TO KEEP</span>
+            </div>
+            <label class="sr-only" for="title">Sketch title</label
+            ><input
+              id="title"
+              class="title-input"
+              placeholder="An idea without a name"
+              maxlength="100"
+            /><label class="sr-only" for="notes">Musical notes</label
+            ><textarea
+              id="notes"
+              placeholder="What caught your ear? A feeling, a lyric, somewhere this could go…"
+              maxlength="10000"
+            ></textarea>
+            <div class="notebook-footer">
+              <span id="save-state">Saved on this device</span
+              ><button id="save" class="button dark">Save sketch ↗</button>
+            </div>
+          </aside>
+        </div>
+        <div id="notice" class="notice" role="status" aria-live="polite">
+          Your audio stays on this device. No account, no uploads, just music.
+        </div>
+        <section class="explore-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">02 / FOLLOW THE HARMONY</p>
+              <h2>A few places to take it.</h2>
+            </div>
+            <span class="small-label"
+              >LISTEN FIRST. THEORY WHEN YOU WANT IT.</span
+            >
+          </div>
+          <div id="analysis-summary" class="analysis-summary">
+            <span class="tiny-star">✳</span>
+            <p>
+              Capture a riff to discover chords that could sit underneath it.
+            </p>
+          </div>
+          <div id="pitch-editor" class="pitch-editor" hidden>
+            <label for="melody"
+              >Detected melody
+              <span class="muted">· edit notes if we misheard</span></label
+            >
+            <div>
+              <input
+                id="melody"
+                aria-describedby="melody-help"
+                placeholder="A3 C4 E4 G4"
+              /><button id="rethink" class="button secondary">
+                Update harmony
+              </button>
+            </div>
+            <small id="melody-help"
+              >Use note names with octaves, like A3 C4 E4. Editing preserves
+              note timing when the note count stays the same.</small
+            >
+          </div>
+          <div id="directions" class="directions">
+            <article class="direction placeholder">
+              <span class="card-number">A / THE FAMILIAR</span>
+              <h3>Find your footing.</h3>
+              <p>A grounded progression that gives your melody a home.</p>
+              <div class="ghost-chords"><i></i><i></i><i></i><i></i></div>
+              <span class="empty-caption">Waiting for your riff</span>
+            </article>
+            <article class="direction placeholder">
+              <span class="card-number">B / A DIFFERENT LIGHT</span>
+              <h3>Change the scenery.</h3>
+              <p>The same notes can tell a different story over a new bass.</p>
+              <div class="ghost-chords"><i></i><i></i><i></i><i></i></div>
+              <span class="empty-caption">Waiting for your riff</span>
+            </article>
+            <article class="direction placeholder">
+              <span class="card-number">C / A LITTLE TENSION</span>
+              <h3>Leave a door open.</h3>
+              <p>
+                Find a little movement. Give the next phrase somewhere to go.
+              </p>
+              <div class="ghost-chords"><i></i><i></i><i></i><i></i></div>
+              <span class="empty-caption">Waiting for your riff</span>
+            </article>
+          </div>
+        </section>
+        <section id="next-step" class="next-step" hidden>
+          <div>
+            <p class="eyebrow">03 / KEEP THE CONVERSATION GOING</p>
+            <h2>Let your riff answer itself.</h2>
+            <p id="development"></p>
+          </div>
+          <button id="variation" class="button secondary">
+            ♫ Hear an ending variation
+          </button>
+        </section>
+      </section>
+      <section id="library" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">THE MATERIALS SHELF</p>
+            <h2>Good ideas, kept close.</h2>
+          </div>
+          <div class="library-actions">
+            <label class="button secondary" for="project-file"
+              >Import sketch</label
+            ><input
+              type="file"
+              id="project-file"
+              accept="application/json,.json"
+              hidden
+            /><button class="button dark" id="new-sketch">＋ New sketch</button>
+          </div>
+        </div>
+        <p class="muted">
+          Your recordings and notes live in this browser. Export the ones you
+          want to keep backed up or move to another device.
+        </p>
+        <div id="sketches" class="sketches"></div>
+      </section>
+      <footer>
+        <span
+          >SONGCRAFT <span class="footer-slash">/</span> COLLECT. UNDERSTAND.
+          MAKE.</span
+        ><span>A work in progress. Just like a good song.</span>
+      </footer>
+    </main>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
