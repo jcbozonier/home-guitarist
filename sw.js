@@ -1,4 +1,4 @@
-const CACHE = "songcraft-v3";
+const CACHE = "songcraft-v4";
 const FILES = [
   "./",
   "./index.html",

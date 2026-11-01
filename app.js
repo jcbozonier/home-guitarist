@@ -30,6 +30,7 @@ let context,
   saveTimer,
   analysisId = 0,
   saving = Promise.resolve();
+let inputAnalyser, inputSource, meterFrame;
 const worker = new Worker("./analysis-worker.js", { type: "module" });
 const pending = new Map();
 worker.onmessage = ({ data }) => {
@@ -183,6 +184,12 @@ function drawWave(buffer) {
     height = canvas.height;
   ctx.clearRect(0, 0, width, height);
   const data = buffer?.getChannelData(0);
+  let maxPeak = 0;
+  if (data)
+    for (const sample of data) maxPeak = Math.max(maxPeak, Math.abs(sample));
+  // Normalize the display independently from playback gain: even a very quiet
+  // recording should have a visible shape if the mic captured anything.
+  const displayGain = data && maxPeak > 0 ? Math.min(1000, 0.85 / maxPeak) : 1;
   ctx.strokeStyle = "#a4b494";
   ctx.lineWidth = 3;
   ctx.lineCap = "round";
@@ -202,12 +209,59 @@ function drawWave(buffer) {
         0.05 *
           (0.5 + 0.5 * Math.sin(x * 0.051)) *
           (0.5 + 0.5 * Math.sin(x * 0.017));
-    const h = Math.max(3, peak * height * 0.85);
+    const h = Math.max(2, peak * displayGain * height * 0.48);
     ctx.beginPath();
     ctx.moveTo(x, height / 2 - h / 2);
     ctx.lineTo(x, height / 2 + h / 2);
     ctx.stroke();
   }
+}
+function startInputMeter() {
+  const canvas = $("waveform"),
+    ctx = canvas.getContext("2d"),
+    samples = new Float32Array(inputAnalyser.fftSize);
+  const draw = () => {
+    if (!recording || !inputAnalyser) return;
+    inputAnalyser.getFloatTimeDomainData(samples);
+    let peak = 0,
+      energy = 0;
+    for (const sample of samples) {
+      const magnitude = Math.abs(sample);
+      peak = Math.max(peak, magnitude);
+      energy += sample * sample;
+    }
+    const rms = Math.sqrt(energy / samples.length);
+    const db = rms > 0 ? Math.round(20 * Math.log10(rms)) : -100;
+    const level = Math.max(0, Math.min(1, (db + 60) / 54));
+    $("input-level-bar").style.width = `${Math.round(level * 100)}%`;
+    $("input-level-bar").style.background =
+      peak > 0.96 ? "#b84936" : level < 0.2 ? "#c18c48" : "#61805c";
+    $("input-level-value").textContent =
+      peak > 0.96 ? "CLIPPING" : rms === 0 ? "NO INPUT" : `${db} dBFS`;
+    $("input-level-label").textContent =
+      rms === 0
+        ? "No mic signal detected"
+        : level < 0.2
+          ? "Very quiet · boost will be applied"
+          : "Guitar signal detected";
+
+    const { width, height } = canvas;
+    ctx.clearRect(0, 0, width, height);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = peak > 0.96 ? "#b84936" : "#61805c";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    const displayGain = peak > 0 ? Math.min(1000, 0.85 / peak) : 1;
+    for (let x = 0; x < width; x++) {
+      const sample = samples[Math.floor((x / width) * samples.length)] || 0;
+      const y = height / 2 - sample * displayGain * height * 0.46;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    meterFrame = requestAnimationFrame(draw);
+  };
+  draw();
 }
 function durationText(seconds) {
   return `00:${String(Math.floor(seconds)).padStart(2, "0")}`;
@@ -405,7 +459,7 @@ async function acceptAudio(blob, isDemo = false) {
     // headroom and a hard limit so silence cannot generate unbounded gain.
     let peak = 0;
     for (const sample of out) peak = Math.max(peak, Math.abs(sample));
-    const gain = peak > 0 ? Math.min(16, 0.75 / peak) : 1;
+    const gain = peak > 0 ? Math.min(32, 0.75 / peak) : 1;
     if (gain > 1) {
       for (let i = 0; i < length; i++) out[i] *= gain;
     }
@@ -497,6 +551,9 @@ async function toggleRecord() {
     const clean = () => {
       recording = false;
       clearInterval(timer);
+      cancelAnimationFrame(meterFrame);
+      inputSource?.disconnect();
+      inputAnalyser = inputSource = null;
       stream?.getTracks().forEach((track) => track.stop());
       $("record").classList.remove("recording");
       $("record").innerHTML = '<span class="record-dot"></span> Record a riff';
@@ -512,6 +569,11 @@ async function toggleRecord() {
     };
     recorder.start();
     recording = true;
+    inputAnalyser = context.createAnalyser();
+    inputAnalyser.fftSize = 2048;
+    inputSource = context.createMediaStreamSource(stream);
+    inputSource.connect(inputAnalyser);
+    startInputMeter();
     $("record").disabled = false;
     $("record").classList.add("recording");
     $("record").textContent = "■ Finish recording";

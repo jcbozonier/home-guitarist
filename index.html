@@ -58,6 +58,15 @@
               recording.
             </p>
             <div class="record-space">
+              <div class="input-meter" aria-live="polite">
+                <span id="input-level-label"
+                  >Mic input · meter runs while recording</span
+                >
+                <span id="input-level-value">READY</span>
+                <div class="input-meter-track" aria-hidden="true">
+                  <span id="input-level-bar"></span>
+                </div>
+              </div>
               <canvas
                 id="waveform"
                 width="900"
@@ -95,8 +104,8 @@
               </button>
             </div>
             <p class="hint">
-              Quiet riffs are automatically amplified for playback and analysis.
-              One note at a time gives the clearest reading.
+              Quiet recordings are amplified. The meter shows what the iPad
+              actually hears. Keep the iPad mic pointed toward your guitar.
             </p>
           </section>
           <aside class="notebook panel">
