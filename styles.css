@@ -663,6 +663,53 @@ h2 {
   line-height: 1.7;
   max-width: 670px;
 }
+.variation-tab {
+  flex: 0 0 100%;
+  width: 100%;
+  padding: 20px;
+  background: #eeefdf;
+  border: 1px solid #dfe2d2;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.tab-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tab-heading .eyebrow {
+  margin: 0;
+}
+.tab-ending {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10px;
+  color: #52634d;
+}
+.tab-help,
+.next-step .tab-note {
+  font-size: 10px !important;
+  color: #7d8474 !important;
+  margin: 9px 0 12px;
+}
+.variation-tab pre {
+  margin: 0;
+  padding: 14px;
+  max-width: 100%;
+  overflow-x: auto;
+  background: #faf9f3;
+  border-radius: 4px;
+  font:
+    13px/1.65 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  color: #334b3a;
+}
+.next-step .tab-note {
+  margin: 10px 0 0;
+  max-width: none;
+}
 .library-actions {
   display: flex;
   gap: 9px;

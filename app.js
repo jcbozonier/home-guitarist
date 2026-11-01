@@ -448,6 +448,62 @@ function renderHarmony() {
   $("next-step").hidden = false;
   $("development").textContent =
     `Repeat your phrase, then change just the final note to ${noteName(endingNote(state.events, key))}, a different note from the proposed home chord. How does that change the feeling? Keep the first ending for a verse, and try the new ending as a response. The preview uses a simple synthesized melody so you can hear the change.`;
+  renderVariationTab();
+}
+function renderVariationTab() {
+  const strings = [
+    { name: "e", open: 64 },
+    { name: "B", open: 59 },
+    { name: "G", open: 55 },
+    { name: "D", open: 50 },
+    { name: "A", open: 45 },
+    { name: "E", open: 40 },
+  ];
+  const events = state.events.map((event) => ({ ...event }));
+  events[events.length - 1].midi = endingNote(events, state.harmony.key);
+  const positions = events.map((event) => {
+    let midi = event.midi;
+    let octaveShift = 0;
+    while (midi < 40) {
+      midi += 12;
+      octaveShift++;
+    }
+    while (midi > 86) {
+      midi -= 12;
+      octaveShift--;
+    }
+    return strings
+      .map((string, index) => ({
+        index,
+        fret: midi - string.open,
+        midi,
+        octaveShift,
+      }))
+      .filter((choice) => choice.fret >= 0 && choice.fret <= 22)
+      .sort((a, b) => a.fret - b.fret || a.index - b.index)[0];
+  });
+  const columns = positions.length * 5;
+  $("tab-staff").textContent = strings
+    .map((string, stringIndex) => {
+      const row = Array(columns).fill("-");
+      positions.forEach((position, noteIndex) => {
+        if (position?.index !== stringIndex) return;
+        const fret = String(position.fret);
+        const offset = noteIndex * 5 + (fret.length === 2 ? 1 : 2);
+        for (let i = 0; i < fret.length; i++) row[offset + i] = fret[i];
+      });
+      return `${string.name}|${row.join("")}|`;
+    })
+    .join("\n");
+  const last = positions.at(-1);
+  $("tab-ending").textContent = last
+    ? `Ending: ${noteName(last.midi)} · ${strings[last.index].name} string, ${last.fret === 0 ? "open" : `fret ${last.fret}`}`
+    : "Ending note outside this fretboard";
+  $("tab-note").textContent = positions.some(
+    (position) => position?.octaveShift,
+  )
+    ? "A note outside the usual guitar range is shown an octave higher or lower to fit a 22-fret guitar."
+    : "0 means an open string. Standard tuning: E A D G B e.";
 }
 function getSketch() {
   return {

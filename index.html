@@ -8,9 +8,9 @@
       name="description"
       content="A small workshop for big musical ideas. Capture a riff, explore its harmony, and make it your own."
     />
-  <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="./styles.css?v=mic-check-3" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./styles.css?v=riff-tab-1" />
     <title>Songcraft · Your musical workshop</title>
   </head>
   <body>
@@ -235,6 +235,21 @@
           <button id="variation" class="button secondary">
             ♫ Hear an ending variation
           </button>
+          <div id="variation-tab" class="variation-tab">
+            <div class="tab-heading">
+              <span class="eyebrow">GUITAR TAB · STANDARD TUNING</span>
+              <span id="tab-ending" class="tab-ending"></span>
+            </div>
+            <p class="tab-help">
+              Play the notes from left to right. Follow the recording for rhythm
+              and pauses.
+            </p>
+            <pre
+              id="tab-staff"
+              aria-label="Tab for the riff ending variation"
+            ></pre>
+            <p id="tab-note" class="tab-note"></p>
+          </div>
         </section>
       </section>
       <section id="library" hidden>
@@ -267,6 +282,6 @@
         ><span>A work in progress. Just like a good song.</span>
       </footer>
     </main>
-<script type="module" src="./app.js?v=mic-check-3"></script>
+<script type="module" src="./app.js?v=riff-tab-1"></script>
   </body>
 </html>
