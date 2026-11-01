@@ -30,7 +30,7 @@ let context,
   saveTimer,
   analysisId = 0,
   saving = Promise.resolve();
-let inputAnalyser, inputSource, meterFrame;
+let inputAnalyser, inputSource, meterFrame, recordingStream;
 const worker = new Worker("./analysis-worker.js", { type: "module" });
 const pending = new Map();
 worker.onmessage = ({ data }) => {
@@ -543,7 +543,32 @@ async function toggleRecord() {
         autoGainControl: false,
       },
     });
-    recorder = new MediaRecorder(stream);
+    inputAnalyser = context.createAnalyser();
+    inputAnalyser.fftSize = 2048;
+    inputSource = context.createMediaStreamSource(stream);
+    inputSource.connect(inputAnalyser);
+
+    // Boost before MediaRecorder's lossy codec; post-decode gain cannot recover
+    // quiet notes that the recorder has already quantized away.
+    if (
+      context.createMediaStreamDestination &&
+      context.createDynamicsCompressor
+    ) {
+      const destination = context.createMediaStreamDestination();
+      const inputGain = context.createGain();
+      inputGain.gain.value = 8; // +18 dB for quiet iPad mic input
+      const limiter = context.createDynamicsCompressor();
+      limiter.threshold.value = -10;
+      limiter.knee.value = 0;
+      limiter.ratio.value = 20;
+      limiter.attack.value = 0.003;
+      limiter.release.value = 0.15;
+      inputSource.connect(inputGain).connect(limiter).connect(destination);
+      recordingStream = destination.stream;
+    } else {
+      recordingStream = stream;
+    }
+    recorder = new MediaRecorder(recordingStream);
     const chunks = [];
     recorder.ondataavailable = (e) => {
       if (e.data.size) chunks.push(e.data);
@@ -555,6 +580,8 @@ async function toggleRecord() {
       inputSource?.disconnect();
       inputAnalyser = inputSource = null;
       stream?.getTracks().forEach((track) => track.stop());
+      recordingStream?.getTracks().forEach((track) => track.stop());
+      recordingStream = null;
       $("record").classList.remove("recording");
       $("record").innerHTML = '<span class="record-dot"></span> Record a riff';
     };
@@ -569,10 +596,6 @@ async function toggleRecord() {
     };
     recorder.start();
     recording = true;
-    inputAnalyser = context.createAnalyser();
-    inputAnalyser.fftSize = 2048;
-    inputSource = context.createMediaStreamSource(stream);
-    inputSource.connect(inputAnalyser);
     startInputMeter();
     $("record").disabled = false;
     $("record").classList.add("recording");
