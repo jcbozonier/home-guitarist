@@ -57,10 +57,41 @@
               A few notes are enough. Play a single-note riff, or bring in a
               recording.
             </p>
+            <div class="mic-setup">
+              <div class="mic-check-row">
+                <span class="mic-setup-title">SET YOUR INPUT LEVEL</span>
+                <button id="mic-check" class="button secondary" type="button">
+                  Check mic before recording
+                </button>
+              </div>
+              <label class="gain-control" for="input-gain">
+                <span>Input gain</span
+                ><output id="gain-value" for="input-gain">+18 dB</output>
+                <input
+                  id="input-gain"
+                  type="range"
+                  min="0"
+                  max="30"
+                  value="18"
+                  step="1"
+                  aria-describedby="gain-help"
+                />
+              </label>
+              <small id="gain-help"
+                >Play a note and raise gain until the meter enters green. If you
+                want to hear yourself, connect headphones before enabling the
+                monitor.</small
+              >
+              <label class="monitor-control"
+                ><input id="hear-mic" type="checkbox" disabled /><span
+                  >Hear the live mic through headphones</span
+                ></label
+              >
+            </div>
             <div class="record-space">
               <div class="input-meter" aria-live="polite">
                 <span id="input-level-label"
-                  >Mic input · meter runs while recording</span
+                  >Mic input · start a mic check to see level</span
                 >
                 <span id="input-level-value">READY</span>
                 <div class="input-meter-track" aria-hidden="true">

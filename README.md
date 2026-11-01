@@ -17,6 +17,7 @@ Run `npm test` (Node 22+) for the music-analysis tests. Every push to `main` run
 ## First version
 
 - Microphone recording and audio import, up to 30 seconds.
+- Pre-recording mic check with adjustable input gain, live level meter and waveform, plus optional headphone monitoring.
 - Microphone input is preamplified before recording, with a compressor to protect louder strums from clipping. Quiet recordings receive additional automatic level boost before analysis and playback, capped at 30 dB. A live microphone meter and autoscaled waveform show whether the iPad is capturing a signal.
 - Local YIN pitch detection in a worker, optimized for clean single-note phrases. No network model, LLM, account, or audio uploads.
 - Editable melody, candidate tonal centers, three chord progressions, and synthesized accompaniment under the original recording.

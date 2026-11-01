@@ -30,7 +30,14 @@ let context,
   saveTimer,
   analysisId = 0,
   saving = Promise.resolve();
-let inputAnalyser, inputSource, meterFrame, recordingStream;
+let inputAnalyser,
+  inputSource,
+  inputGain,
+  limiter,
+  monitorGain,
+  meterFrame,
+  recordingStream,
+  micChecking = false;
 const worker = new Worker("./analysis-worker.js", { type: "module" });
 const pending = new Map();
 worker.onmessage = ({ data }) => {
@@ -78,6 +85,9 @@ function setBusy(value) {
     "variation",
     "play-riff",
     "library-tab",
+    "mic-check",
+    "input-gain",
+    "hear-mic",
   ])
     $(id).disabled = value;
   $("play-riff").disabled = value || !state.buffer;
@@ -221,7 +231,7 @@ function startInputMeter() {
     ctx = canvas.getContext("2d"),
     samples = new Float32Array(inputAnalyser.fftSize);
   const draw = () => {
-    if (!recording || !inputAnalyser) return;
+    if ((!recording && !micChecking) || !inputAnalyser) return;
     inputAnalyser.getFloatTimeDomainData(samples);
     let peak = 0,
       energy = 0;
@@ -242,7 +252,7 @@ function startInputMeter() {
       rms === 0
         ? "No mic signal detected"
         : level < 0.2
-          ? "Very quiet · boost will be applied"
+          ? "Very quiet · raise input gain"
           : "Guitar signal detected";
 
     const { width, height } = canvas;
@@ -262,6 +272,84 @@ function startInputMeter() {
     meterFrame = requestAnimationFrame(draw);
   };
   draw();
+}
+async function startMicInput() {
+  await audio();
+  if (!navigator.mediaDevices?.getUserMedia)
+    throw new Error("Microphone access isn’t available in this browser.");
+  stream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      echoCancellation: false,
+      noiseSuppression: false,
+      autoGainControl: false,
+    },
+  });
+  inputSource = context.createMediaStreamSource(stream);
+
+  if (
+    context.createMediaStreamDestination &&
+    context.createDynamicsCompressor
+  ) {
+    const destination = context.createMediaStreamDestination();
+    recordingStream = destination.stream;
+    inputGain = context.createGain();
+    inputAnalyser = context.createAnalyser();
+    inputAnalyser.fftSize = 2048;
+    limiter = context.createDynamicsCompressor();
+    monitorGain = context.createGain();
+    monitorGain.gain.value = $("hear-mic").checked ? 0.18 : 0;
+    limiter.threshold.value = -10;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.15;
+    inputSource.connect(inputGain).connect(inputAnalyser).connect(limiter);
+    limiter.connect(destination);
+    limiter.connect(monitorGain).connect(context.destination);
+    inputGain.gain.value = 10 ** (+$("input-gain").value / 20);
+  } else {
+    recordingStream = stream;
+    inputAnalyser = context.createAnalyser();
+    inputAnalyser.fftSize = 2048;
+    inputSource.connect(inputAnalyser);
+    $("hear-mic").disabled = true;
+  }
+  $("hear-mic").disabled = !monitorGain;
+  micChecking = true;
+  $("mic-check").textContent = "Stop mic check";
+  $("record-state").textContent = "Mic check · play a note and adjust the gain";
+  startInputMeter();
+}
+function stopMicInput() {
+  if (recording) return;
+  micChecking = false;
+  cancelAnimationFrame(meterFrame);
+  try {
+    inputSource?.disconnect();
+  } catch {}
+  try {
+    inputGain?.disconnect();
+  } catch {}
+  try {
+    limiter?.disconnect();
+  } catch {}
+  try {
+    monitorGain?.disconnect();
+  } catch {}
+  stream?.getTracks().forEach((track) => track.stop());
+  recordingStream?.getTracks().forEach((track) => track.stop());
+  stream =
+    recordingStream =
+    inputAnalyser =
+    inputSource =
+    inputGain =
+    limiter =
+    monitorGain =
+      null;
+  $("hear-mic").checked = false;
+  $("hear-mic").disabled = true;
+  $("mic-check").textContent = "Check mic before recording";
+  $("record-state").textContent = "Mic check stopped";
 }
 function durationText(seconds) {
   return `00:${String(Math.floor(seconds)).padStart(2, "0")}`;
@@ -532,42 +620,13 @@ async function toggleRecord() {
   setBusy(true);
   try {
     await audio();
-    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder)
+    if (!window.MediaRecorder)
       throw new Error(
         "Microphone recording is unavailable in this browser. Try importing an audio file.",
       );
-    stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false,
-      },
-    });
-    inputAnalyser = context.createAnalyser();
-    inputAnalyser.fftSize = 2048;
-    inputSource = context.createMediaStreamSource(stream);
-    inputSource.connect(inputAnalyser);
-
-    // Boost before MediaRecorder's lossy codec; post-decode gain cannot recover
-    // quiet notes that the recorder has already quantized away.
-    if (
-      context.createMediaStreamDestination &&
-      context.createDynamicsCompressor
-    ) {
-      const destination = context.createMediaStreamDestination();
-      const inputGain = context.createGain();
-      inputGain.gain.value = 8; // +18 dB for quiet iPad mic input
-      const limiter = context.createDynamicsCompressor();
-      limiter.threshold.value = -10;
-      limiter.knee.value = 0;
-      limiter.ratio.value = 20;
-      limiter.attack.value = 0.003;
-      limiter.release.value = 0.15;
-      inputSource.connect(inputGain).connect(limiter).connect(destination);
-      recordingStream = destination.stream;
-    } else {
-      recordingStream = stream;
-    }
+    if (!stream?.active) await startMicInput();
+    micChecking = false;
+    $("mic-check").textContent = "Mic ready · recording";
     recorder = new MediaRecorder(recordingStream);
     const chunks = [];
     recorder.ondataavailable = (e) => {
@@ -575,13 +634,26 @@ async function toggleRecord() {
     };
     const clean = () => {
       recording = false;
+      micChecking = false;
       clearInterval(timer);
       cancelAnimationFrame(meterFrame);
       inputSource?.disconnect();
-      inputAnalyser = inputSource = null;
+      try {
+        inputGain?.disconnect();
+      } catch {}
+      try {
+        limiter?.disconnect();
+      } catch {}
+      try {
+        monitorGain?.disconnect();
+      } catch {}
+      inputAnalyser = inputSource = inputGain = limiter = monitorGain = null;
       stream?.getTracks().forEach((track) => track.stop());
       recordingStream?.getTracks().forEach((track) => track.stop());
-      recordingStream = null;
+      stream = recordingStream = null;
+      $("hear-mic").checked = false;
+      $("hear-mic").disabled = true;
+      $("mic-check").textContent = "Check mic before recording";
       $("record").classList.remove("recording");
       $("record").innerHTML = '<span class="record-dot"></span> Record a riff';
     };
@@ -609,7 +681,7 @@ async function toggleRecord() {
     }, 200);
     message("Recording. Play a single-note phrase, then tap Finish recording.");
   } catch (error) {
-    stream?.getTracks().forEach((track) => track.stop());
+    stopMicInput();
     setBusy(false);
     message(
       error.name === "NotAllowedError"
@@ -847,6 +919,48 @@ async function importSketch(file) {
 const initialDirections = $("directions").innerHTML,
   initialSummary = $("analysis-summary").innerHTML;
 $("record").onclick = toggleRecord;
+$("mic-check").onclick = async () => {
+  if (busy || recording) return;
+  if (micChecking) {
+    stopMicInput();
+    return;
+  }
+  setBusy(true);
+  try {
+    await startMicInput();
+    setBusy(false);
+    message(
+      "Mic check is live. Adjust gain, then start recording when you’re ready.",
+    );
+  } catch (error) {
+    stopMicInput();
+    setBusy(false);
+    message(
+      error.name === "NotAllowedError"
+        ? "Microphone permission was denied. Allow mic access for this site in your browser settings."
+        : error.message,
+      true,
+    );
+  }
+};
+$("input-gain").oninput = () => {
+  const decibels = +$("input-gain").value;
+  $("gain-value").textContent = `+${decibels} dB`;
+  if (inputGain)
+    inputGain.gain.setTargetAtTime(
+      10 ** (decibels / 20),
+      context.currentTime,
+      0.025,
+    );
+};
+$("hear-mic").onchange = () => {
+  if (monitorGain)
+    monitorGain.gain.setTargetAtTime(
+      $("hear-mic").checked ? 0.18 : 0,
+      context.currentTime,
+      0.035,
+    );
+};
 $("demo").onclick = loadDemo;
 $("play-riff").onclick = playRiff;
 $("audio-file").onchange = async (e) => {

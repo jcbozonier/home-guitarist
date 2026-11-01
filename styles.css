@@ -232,6 +232,70 @@ h1 {
 .capture .muted {
   margin: 0;
 }
+.mic-setup {
+  margin: 18px 0 0;
+  padding: 14px 15px;
+  background: #f0f1e8;
+  border: 1px solid #e1e4d9;
+  border-radius: 5px;
+}
+.mic-check-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mic-setup-title {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #73806d;
+}
+.mic-check-row .button {
+  min-height: 36px;
+  padding: 9px 12px;
+  font-size: 10px;
+}
+.gain-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 9px 12px;
+  margin-top: 14px;
+  font-size: 11px;
+  color: #455548;
+}
+.gain-control output {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: #34664d;
+  font-size: 10px;
+}
+.gain-control input {
+  grid-column: 1/-1;
+  width: 100%;
+  accent-color: #34664d;
+}
+.mic-setup small {
+  display: block;
+  color: #798272;
+  font-size: 9px;
+  line-height: 1.5;
+  margin-top: 2px;
+}
+.monitor-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 10px;
+  color: #586455;
+}
+.monitor-control input {
+  accent-color: #34664d;
+}
+.monitor-control:has(input:disabled) {
+  opacity: 0.65;
+}
 .record-space {
   margin: 24px 0 18px;
   background: #f4f5ee;
