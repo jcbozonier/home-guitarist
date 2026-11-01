@@ -10,7 +10,7 @@
     />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="./styles.css?v=riff-tab-1" />
+    <link rel="stylesheet" href="./styles.css?v=tuner-1" />
     <title>Songcraft · Your musical workshop</title>
   </head>
   <body>
@@ -43,6 +43,8 @@
         ><button class="tab" id="library-tab" aria-selected="false">
           02 <span>My sketches</span
           ><span id="sketch-count" class="badge">0</span></button
+        ><button class="tab" id="tuner-tab" aria-selected="false">
+          03 <span>Tuner</span></button
         ><span class="tabs-note">Made for following a good idea.</span>
       </nav>
       <section id="workbench">
@@ -275,6 +277,31 @@
         </p>
         <div id="sketches" class="sketches"></div>
       </section>
+      <section id="tuner" class="tuner-page" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">A QUICK CHECK BEFORE YOU PLAY</p>
+            <h2>Polyphonic guitar tuner</h2>
+            <p class="muted">Strum all six open strings together. Songcraft will listen for each string and show how far it is from standard tuning.</p>
+          </div>
+          <button id="tuner-start" class="button primary" type="button">Start listening</button>
+        </div>
+        <div class="tuner-card">
+          <div class="tuner-meta">
+            <span class="eyebrow">STANDARD TUNING · E A D G B e</span>
+            <span id="tuner-status" aria-live="polite">Ready when you are</span>
+          </div>
+          <div id="tuner-strings" class="tuner-strings" aria-live="polite">
+            <div class="tuner-string" data-string="E2"><span class="string-name">Low E</span><strong class="string-note">E2</strong><span class="string-reading">Play all open strings</span></div>
+            <div class="tuner-string" data-string="A2"><span class="string-name">A</span><strong class="string-note">A2</strong><span class="string-reading">Play all open strings</span></div>
+            <div class="tuner-string" data-string="D3"><span class="string-name">D</span><strong class="string-note">D3</strong><span class="string-reading">Play all open strings</span></div>
+            <div class="tuner-string" data-string="G3"><span class="string-name">G</span><strong class="string-note">G3</strong><span class="string-reading">Play all open strings</span></div>
+            <div class="tuner-string" data-string="B3"><span class="string-name">B</span><strong class="string-note">B3</strong><span class="string-reading">Play all open strings</span></div>
+            <div class="tuner-string" data-string="E4"><span class="string-name">High E</span><strong class="string-note">E4</strong><span class="string-reading">Play all open strings</span></div>
+          </div>
+          <p class="tuner-help">Allow microphone access, hold the iPad near the guitar, and strum the open strings once. Best results come from a quiet room and a clear strum.</p>
+        </div>
+      </section>
       <footer>
         <span
           >SONGCRAFT <span class="footer-slash">/</span> COLLECT. UNDERSTAND.
@@ -282,6 +309,6 @@
         ><span>A work in progress. Just like a good song.</span>
       </footer>
     </main>
-<script type="module" src="./app.js?v=riff-tab-1"></script>
+    <script type="module" src="./app.js?v=tuner-1"></script>
   </body>
 </html>

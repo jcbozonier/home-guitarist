@@ -174,6 +174,89 @@ h1 {
 .tab.active span {
   font-weight: 600;
 }
+.tuner-page {
+  min-height: 60vh;
+}
+.tuner-page .section-heading {
+  align-items: center;
+  margin-bottom: 24px;
+}
+.tuner-page .section-heading h2 {
+  margin: 0 0 10px;
+  font-size: 34px;
+}
+.tuner-page .section-heading .muted {
+  max-width: 650px;
+  margin: 0;
+}
+.tuner-card {
+  padding: clamp(20px, 4vw, 42px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.tuner-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid var(--line);
+}
+.tuner-meta .eyebrow {
+  margin: 0;
+}
+#tuner-status {
+  color: var(--muted);
+  font-size: 11px;
+}
+.tuner-strings {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  padding: 22px 0 12px;
+}
+.tuner-string {
+  display: flex;
+  min-height: 172px;
+  padding: 18px 8px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  background: #f4f4ec;
+  border: 1px solid #e6e8dd;
+  border-radius: 6px;
+}
+.tuner-string .string-name {
+  color: var(--muted);
+  font-size: 11px;
+}
+.tuner-string .string-note {
+  font: 400 34px Georgia, "Times New Roman", serif;
+}
+.tuner-string .string-reading {
+  min-height: 28px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.tuner-string.flat .string-reading {
+  color: #507692;
+}
+.tuner-string.sharp .string-reading {
+  color: #a74f3e;
+}
+.tuner-string.in-tune .string-reading {
+  color: var(--green);
+}
+.tuner-help {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
 .tab .badge {
   font-size: 10px;
   background: #e5e8dc;
@@ -845,8 +928,18 @@ footer {
     display: none;
   }
   .tabs {
-    gap: 24px;
+    gap: 16px;
     margin-bottom: 20px;
+  }
+  .tabs-note {
+    display: none;
+  }
+  .tuner-strings {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .tuner-meta {
+    align-items: flex-start;
+    flex-direction: column;
   }
   .workspace-grid {
     grid-template-columns: 1fr;

@@ -8,6 +8,7 @@ import {
   endingNote,
 } from "./music.js";
 import { listSketches, writeSketch, deleteSketch } from "./storage.js";
+import { estimateStrings, STRINGS } from "./tuner.js";
 
 const $ = (id) => document.getElementById(id);
 const state = {
@@ -38,6 +39,7 @@ let inputAnalyser,
   meterFrame,
   recordingStream,
   micChecking = false;
+let tunerContext, tunerStream, tunerAnalyser, tunerFrame;
 const worker = new Worker("./analysis-worker.js", { type: "module" });
 const pending = new Map();
 worker.onmessage = ({ data }) => {
@@ -85,6 +87,7 @@ function setBusy(value) {
     "variation",
     "play-riff",
     "library-tab",
+    "tuner-tab",
     "mic-check",
     "input-gain",
     "hear-mic",
@@ -786,11 +789,16 @@ async function loadDemo() {
   }
 }
 function switchTab(library) {
-  $("workbench").hidden = library;
-  $("library").hidden = !library;
+  const view =
+    library === true ? "library" : library === false ? "workbench" : library;
+  if (view !== "tuner") stopTuner();
+  $("workbench").hidden = view !== "workbench";
+  $("library").hidden = view !== "library";
+  $("tuner").hidden = view !== "tuner";
   for (const [id, selected] of [
-    ["workbench-tab", !library],
-    ["library-tab", library],
+    ["workbench-tab", view === "workbench"],
+    ["library-tab", view === "library"],
+    ["tuner-tab", view === "tuner"],
   ]) {
     $(id).classList.toggle("active", selected);
     $(id).setAttribute("aria-selected", String(selected));
@@ -1048,6 +1056,90 @@ $("library-tab").onclick = async () => {
   await renderLibrary();
 };
 $("workbench-tab").onclick = () => switchTab(false);
+$("tuner-tab").onclick = () => switchTab("tuner");
+function drawTuner() {
+  if (!tunerAnalyser) return;
+  const spectrum = new Float32Array(tunerAnalyser.frequencyBinCount);
+  tunerAnalyser.getFloatFrequencyData(spectrum);
+  const readings = estimateStrings(
+    spectrum,
+    tunerContext.sampleRate,
+    tunerAnalyser.fftSize,
+  );
+  let detected = 0;
+  STRINGS.forEach((string, i) => {
+    const row = $("tuner-strings").querySelector(
+      `[data-string="${string.name}"]`,
+    );
+    const note = row.querySelector(".string-note");
+    const reading = row.querySelector(".string-reading");
+    const value = readings[i];
+    row.classList.remove("flat", "sharp", "in-tune");
+    if (!value) {
+      note.textContent = string.name;
+      reading.textContent = "Not detected yet";
+      return;
+    }
+    detected++;
+    const offset = value.cents;
+    note.textContent = value.note;
+    if (Math.abs(offset) <= 5) {
+      row.classList.add("in-tune");
+      reading.textContent = `In tune · ${value.frequency.toFixed(1)} Hz`;
+    } else if (offset < 0) {
+      row.classList.add("flat");
+      reading.textContent = `${Math.abs(offset)} cents flat · tune up`;
+    } else {
+      row.classList.add("sharp");
+      reading.textContent = `${offset} cents sharp · tune down`;
+    }
+  });
+  $("tuner-status").textContent = detected
+    ? `${detected} of 6 strings detected · strum again to refresh`
+    : "Listening · strum all six open strings";
+  tunerFrame = requestAnimationFrame(drawTuner);
+}
+function stopTuner() {
+  cancelAnimationFrame(tunerFrame);
+  tunerStream?.getTracks().forEach((track) => track.stop());
+  tunerStream = null;
+  tunerAnalyser = null;
+  $("tuner-start").textContent = "Start listening";
+  $("tuner-status").textContent = "Ready when you are";
+}
+$("tuner-start").onclick = async () => {
+  if (tunerStream) {
+    stopTuner();
+    return;
+  }
+  try {
+    if (!navigator.mediaDevices?.getUserMedia)
+      throw new Error("Microphone access isn’t available in this browser.");
+    stopMicInput();
+    tunerContext ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (tunerContext.state !== "running") await tunerContext.resume();
+    tunerStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+      },
+    });
+    tunerAnalyser = tunerContext.createAnalyser();
+    tunerAnalyser.fftSize = 8192;
+    tunerAnalyser.smoothingTimeConstant = 0.35;
+    tunerContext.createMediaStreamSource(tunerStream).connect(tunerAnalyser);
+    $("tuner-start").textContent = "Stop listening";
+    $("tuner-status").textContent = "Listening · strum all six open strings";
+    drawTuner();
+  } catch (error) {
+    stopTuner();
+    $("tuner-status").textContent =
+      error.name === "NotAllowedError"
+        ? "Allow microphone access for this site, then try again."
+        : error.message;
+  }
+};
 $("new-sketch").onclick = async () => {
   if (saveTimer) await saveSketch();
   stopPlayback();
@@ -1129,6 +1221,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     if (saveTimer) saveSketch();
     if (recording && recorder.state === "recording") recorder.stop();
+    if (tunerStream) stopTuner();
   }
 });
 window.addEventListener("pagehide", () => {
