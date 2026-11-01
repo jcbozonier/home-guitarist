@@ -40,6 +40,8 @@ let inputAnalyser,
   recordingStream,
   micChecking = false;
 let tunerContext, tunerStream, tunerAnalyser, tunerFrame;
+let tunerHeld = [],
+  tunerSamples = [];
 const worker = new Worker("./analysis-worker.js", { type: "module" });
 const pending = new Map();
 worker.onmessage = ({ data }) => {
@@ -1067,6 +1069,7 @@ function drawTuner() {
     tunerAnalyser.fftSize,
   );
   let detected = 0;
+  const now = performance.now();
   STRINGS.forEach((string, i) => {
     const row = $("tuner-strings").querySelector(
       `[data-string="${string.name}"]`,
@@ -1075,27 +1078,47 @@ function drawTuner() {
     const reading = row.querySelector(".string-reading");
     const value = readings[i];
     row.classList.remove("flat", "sharp", "in-tune");
-    if (!value) {
+    if (value) {
+      tunerSamples[i].push(value.cents);
+      if (tunerSamples[i].length > 7) tunerSamples[i].shift();
+      const sorted = [...tunerSamples[i]].sort((a, b) => a - b);
+      const cents = sorted[Math.floor(sorted.length / 2)];
+      if (tunerSamples[i].length < 5 && !tunerHeld[i]) return;
+      if (!tunerHeld[i]) {
+        tunerHeld[i] = { ...value, cents, seenAt: now };
+      } else {
+        tunerHeld[i].cents = tunerHeld[i].cents * 0.72 + cents * 0.28;
+        tunerHeld[i].frequency =
+          440 * 2 ** ((string.midi - 69 + tunerHeld[i].cents / 100) / 12);
+        tunerHeld[i].note = value.note;
+        tunerHeld[i].seenAt = now;
+      }
+    }
+    const held = tunerHeld[i];
+    if (!held) {
+      tunerHeld[i] = null;
+      tunerSamples[i] = [];
       note.textContent = string.name;
       reading.textContent = "Not detected yet";
       return;
     }
     detected++;
-    const offset = value.cents;
-    note.textContent = value.note;
+    const offset = Math.round(held.cents);
+    const fading = now - held.seenAt > 650;
+    note.textContent = held.note;
     if (Math.abs(offset) <= 5) {
       row.classList.add("in-tune");
-      reading.textContent = `In tune · ${value.frequency.toFixed(1)} Hz`;
+      reading.textContent = `In tune${fading ? " · held" : ""} · ${held.frequency.toFixed(1)} Hz`;
     } else if (offset < 0) {
       row.classList.add("flat");
-      reading.textContent = `${Math.abs(offset)} cents flat · tune up`;
+      reading.textContent = `${Math.abs(offset)} cents flat${fading ? " · held" : ""} · tune up`;
     } else {
       row.classList.add("sharp");
-      reading.textContent = `${offset} cents sharp · tune down`;
+      reading.textContent = `${offset} cents sharp${fading ? " · held" : ""} · tune down`;
     }
   });
   $("tuner-status").textContent = detected
-    ? `${detected} of 6 strings detected · strum again to refresh`
+    ? `${detected} of 6 strings captured · strum again to update`
     : "Listening · strum all six open strings";
   tunerFrame = requestAnimationFrame(drawTuner);
 }
@@ -1105,7 +1128,9 @@ function stopTuner() {
   tunerStream = null;
   tunerAnalyser = null;
   $("tuner-start").textContent = "Start listening";
-  $("tuner-status").textContent = "Ready when you are";
+  $("tuner-status").textContent = tunerHeld.some(Boolean)
+    ? "Stopped · last readings kept on screen"
+    : "Ready when you are";
 }
 $("tuner-start").onclick = async () => {
   if (tunerStream) {
@@ -1129,6 +1154,8 @@ $("tuner-start").onclick = async () => {
     tunerAnalyser.fftSize = 8192;
     tunerAnalyser.smoothingTimeConstant = 0.35;
     tunerContext.createMediaStreamSource(tunerStream).connect(tunerAnalyser);
+    tunerHeld = STRINGS.map(() => null);
+    tunerSamples = STRINGS.map(() => []);
     $("tuner-start").textContent = "Stop listening";
     $("tuner-status").textContent = "Listening · strum all six open strings";
     drawTuner();
