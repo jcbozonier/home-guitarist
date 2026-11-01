@@ -17,6 +17,7 @@ Run `npm test` (Node 22+) for the music-analysis tests. Every push to `main` run
 ## First version
 
 - Microphone recording and audio import, up to 30 seconds.
+- Quiet recordings receive automatic digital level boost before analysis and playback, capped at 24 dB with peak headroom.
 - Local YIN pitch detection in a worker, optimized for clean single-note phrases. No network model, LLM, account, or audio uploads.
 - Editable melody, candidate tonal centers, three chord progressions, and synthesized accompaniment under the original recording.
 - Audible alternate ending, favorite directions, notes, and IndexedDB sketch storage.

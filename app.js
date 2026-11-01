@@ -400,6 +400,16 @@ async function acceptAudio(blob, isDemo = false) {
       for (let i = 0; i < length; i++)
         out[i] += input[i] / decoded.numberOfChannels;
     }
+    // iPad microphone input can be much quieter than its waveform suggests.
+    // Boost the entire clip before both playback and pitch analysis, with ample
+    // headroom and a hard limit so silence cannot generate unbounded gain.
+    let peak = 0;
+    for (const sample of out) peak = Math.max(peak, Math.abs(sample));
+    const gain = peak > 0 ? Math.min(16, 0.75 / peak) : 1;
+    if (gain > 1) {
+      for (let i = 0; i < length; i++) out[i] *= gain;
+    }
+    const boostDb = Math.round(20 * Math.log10(gain));
     const offline = new OfflineAudioContext(
         1,
         Math.ceil(mono.duration * 8000),
@@ -431,14 +441,14 @@ async function acceptAudio(blob, isDemo = false) {
     if (events.length) {
       renderHarmony();
       message(
-        `${isDemo ? "Demo ready." : `Found ${events.length} note events.`} Audition a direction below, or correct the detected melody.${decoded.duration > 30 ? " Only the first 30 seconds were used." : ""}`,
+        `${isDemo ? "Demo ready." : `Boosted the recording ${boostDb} dB. Found ${events.length} note events.`} Audition a direction below, or correct the detected melody.${decoded.duration > 30 ? " Only the first 30 seconds were used." : ""}`,
       );
     } else {
       $("analysis-summary").replaceChildren(
         el(
           "p",
           "",
-          "We couldn’t confidently hear a melody. Try a cleaner, louder single-note riff, or enter the notes below.",
+          `We boosted this recording ${boostDb} dB, but still couldn’t confidently hear a melody. Try playing one note at a time closer to the iPad, or enter the notes below.`,
         ),
       );
       $("directions").replaceChildren();
