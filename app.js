@@ -522,7 +522,7 @@ function encodeWav(buffer) {
     view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, data[i])) * 32767, true);
   return new Blob([bytes], { type: "audio/wav" });
 }
-async function acceptAudio(blob, isDemo = false) {
+async function acceptAudio(blob, isDemo = false, captureGainDb = 0) {
   setBusy(true);
   stopPlayback();
   message("Listening for the notes in your riff…");
@@ -547,11 +547,13 @@ async function acceptAudio(blob, isDemo = false) {
     // headroom and a hard limit so silence cannot generate unbounded gain.
     let peak = 0;
     for (const sample of out) peak = Math.max(peak, Math.abs(sample));
-    const gain = peak > 0 ? Math.min(32, 0.75 / peak) : 1;
-    if (gain > 1) {
-      for (let i = 0; i < length; i++) out[i] *= gain;
+    const manualGain = 10 ** (captureGainDb / 20);
+    const gain = peak > 0 ? Math.min(32, 0.75 / (peak * manualGain)) : 1;
+    const totalGain = gain * manualGain;
+    if (totalGain !== 1) {
+      for (let i = 0; i < length; i++) out[i] *= totalGain;
     }
-    const boostDb = Math.round(20 * Math.log10(gain));
+    const boostDb = Math.round(20 * Math.log10(totalGain));
     const offline = new OfflineAudioContext(
         1,
         Math.ceil(mono.duration * 8000),
@@ -627,7 +629,11 @@ async function toggleRecord() {
     if (!stream?.active) await startMicInput();
     micChecking = false;
     $("mic-check").textContent = "Mic ready · recording";
-    recorder = new MediaRecorder(recordingStream);
+    // Keep the recorder connected directly to the original mic stream. The
+    // Web Audio path is only for preview/monitoring; recording a generated
+    // MediaStreamDestination is unreliable in some mobile browsers.
+    recorder = new MediaRecorder(stream);
+    const captureGainDb = +$("input-gain").value;
     const chunks = [];
     recorder.ondataavailable = (e) => {
       if (e.data.size) chunks.push(e.data);
@@ -659,7 +665,11 @@ async function toggleRecord() {
     };
     recorder.onstop = async () => {
       clean();
-      await acceptAudio(new Blob(chunks, { type: recorder.mimeType }));
+      await acceptAudio(
+        new Blob(chunks, { type: recorder.mimeType }),
+        false,
+        captureGainDb,
+      );
     };
     recorder.onerror = () => {
       clean();
