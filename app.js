@@ -120,17 +120,32 @@ function tone(ctx, midi, start, length, level = 0.09) {
     gain = ctx.createGain();
   osc.type = "triangle";
   osc.frequency.value = frequency(midi);
+  const duration = Math.max(0.08, length);
+  const release = Math.min(0.16, duration * 0.28);
+  const releaseStart = start + duration - release;
   gain.gain.setValueAtTime(0, start);
-  gain.gain.linearRampToValueAtTime(level, start + 0.015);
-  gain.gain.exponentialRampToValueAtTime(0.001, start + Math.max(0.04, length));
+  gain.gain.linearRampToValueAtTime(level, start + 0.02);
+  gain.gain.setValueAtTime(level, Math.max(start + 0.02, releaseStart));
+  gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
   osc.connect(gain).connect(ctx.destination);
   osc.start(start);
-  osc.stop(start + length + 0.06);
+  osc.stop(start + duration + 0.03);
   osc.onended = () => {
     osc.disconnect();
     gain.disconnect();
   };
   playback.push(osc);
+}
+function variationLength(events, index) {
+  const event = events[index];
+  const gap = events[index + 1]
+    ? events[index + 1].start - event.start + 0.04
+    : 0.85;
+  const preferred = Math.max(
+    event.duration,
+    index === events.length - 1 ? 0.85 : 0.28,
+  );
+  return Math.min(preferred, gap);
 }
 function original(ctx, start) {
   if (!state.buffer) return;
@@ -1232,13 +1247,16 @@ $("variation").onclick = async () => {
       if (i === events.length - 1) {
         midi = endingNote(events, key);
       }
-      tone(ctx, midi, start + event.start, event.duration, 0.16);
+      const length = variationLength(events, i);
+      tone(ctx, midi, start + event.start, length, 0.36);
     });
     playTimer = setTimeout(
       stopPlayback,
-      (Math.max(state.duration, ...events.map((e) => e.start + e.duration)) +
-        0.2) *
-        1000,
+      (Math.max(
+        state.duration,
+        ...events.map((event, i) => event.start + variationLength(events, i)),
+      ) +
+        0.2) * 1000,
     );
   } catch (error) {
     message(error.message, true);
